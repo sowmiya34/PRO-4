@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "========================================"
-echo " SELinux Practical - Command Validation"
+echo " SELinux Practical - Autograding"
 echo "========================================"
 
 FILE="student_solution.sh"
@@ -11,38 +11,46 @@ if [ ! -f "$FILE" ]; then
     exit 1
 fi
 
+echo "Student solution found: $FILE"
+echo
+
 MARKS=0
 
 check_command() {
-    if grep -Fq "$1" "$FILE"; then
-        echo "PASS: $1"
-        MARKS=$((MARKS+1))
+    NAME="$1"
+    PATTERN="$2"
+
+    if grep -Eq "$PATTERN" "$FILE"; then
+        echo "PASS: $NAME"
+        MARKS=$((MARKS + 1))
     else
-        echo "FAIL: $1"
+        echo "FAIL: $NAME"
     fi
 }
 
-echo
-echo "Checking required commands..."
+echo "Checking required SELinux commands..."
 echo
 
-check_command "getenforce"
-check_command "sestatus"
-check_command "mkdir -p /myweb"
-check_command "index.html"
-check_command "chmod 755 /myweb"
-check_command "chmod 644 /myweb/index.html"
-check_command "ls -Z /myweb/index.html"
-check_command "chcon -t default_t /myweb/index.html"
-check_command "ausearch -m AVC,USER_AVC -ts recent"
-check_command "chcon -t httpd_sys_content_t /myweb/index.html"
+check_command "getenforce" '(^|[[:space:]])getenforce([[:space:]]|$)'
+check_command "sestatus" '(^|[[:space:]])sestatus([[:space:]]|$)'
+check_command "Create /myweb" 'mkdir[[:space:]]+(-p[[:space:]]+)?/myweb'
+check_command "Create index.html" 'index\.html'
+check_command "chmod 755" 'chmod[[:space:]]+755[[:space:]]+/myweb'
+check_command "chmod 644" 'chmod[[:space:]]+644[[:space:]]+/myweb/index\.html'
+check_command "ls -Z" 'ls[[:space:]]+-Z[[:space:]]+/myweb/index\.html'
+check_command "Wrong SELinux context" 'chcon[[:space:]]+-t[[:space:]]+default_t'
+check_command "ausearch AVC" 'ausearch[[:space:]]+-m[[:space:]]+AVC'
+check_command "Correct SELinux context" 'chcon[[:space:]]+-t[[:space:]]+httpd_sys_content_t'
 
 echo
 echo "========================================"
 echo "Marks: $MARKS / 10"
 echo "========================================"
 
-if [ "$MARKS" -ge 8 ]; then
+if [ "$MARKS" -eq 10 ]; then
+    echo "RESULT: PASS"
+    exit 0
+elif [ "$MARKS" -ge 8 ]; then
     echo "RESULT: PASS"
     exit 0
 else
